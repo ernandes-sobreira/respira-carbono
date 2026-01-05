@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>RespiraCarbono 2.0 — Ecossistema</title>
+  <style>
+    :root{
+      --bg:#071026;
+      --panel: rgba(12,18,40,.94);
+      --card: rgba(14,22,52,.92);
+      --line: rgba(255,255,255,.14);
+      --text:#eef3ff;
+      --muted:#b8c3ff;
+      --shadow: 0 14px 34px rgba(0,0,0,.45);
+      --r:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      min-height:100vh;
+      padding:12px;
+      overflow-x:hidden;
+      -webkit-tap-highlight-color: transparent;
+      background:
+        radial-gradient(900px 600px at 15% 0%, rgba(32,58,143,.22), rgba(32,58,143,0) 55%),
+        radial-gradient(900px 600px at 90% 10%, rgba(106,27,154,.18), rgba(106,27,154,0) 60%),
+        var(--bg);
+    }
+    .wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+    header{
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding:12px;
+      backdrop-filter: blur(10px);
+      position:relative;
+      overflow:hidden;
+    }
+    h1{margin:0 0 6px;font-size:18px}
+    .sub{
+      margin:0;
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.35;
+    }
+    .toprow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+    .pill{
+      padding:8px 10px;border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.07);
+      color:var(--muted);
+      font-size:13px;
+      display:inline-flex;gap:8px;align-items:center;
+    }
+    .pill b{color:var(--text)}
+    .btn{
+      padding:9px 12px;border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.09);
+      color:var(--text);
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .panel{
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding:12px;
+      backdrop-filter: blur(10px);
+    }
+
+    /* ===== Dia/Noite + Nublado (overlay real) ===== */
+    .nightShade{
+      position:fixed; inset:0;
+      z-index: 9999;
+      pointer-events:none;
+      opacity:0;
+      transition: opacity 1200ms linear;
+      background:
+        radial-gradient(900px 600px at 80% 10%, rgba(180,210,255,.12), rgba(180,210,255,0) 60%),
+        linear-gradient(180deg, rgba(0,0,0,.78), rgba(0,0,0,.30));
+    }
+    .nightOn{ opacity:.94; }
+
+    .dayGlow{
+      position:fixed; inset:0;
+      z-index: 9998;
+      pointer-events:none;
+      opacity:0;
+      transition: opacity 1200ms linear;
+      background:
+        radial-gradient(900px 650px at 40% 5%, rgba(255,255,255,.26), rgba(255,255,255,0) 60%),
+        radial-gradient(900px 650px at 90% 10%, rgba(120,200,255,.20), rgba(120,200,255,0) 60%);
+      mix-blend-mode: screen;
+    }
+    .dayOn{ opacity:.70; }
+
+    .cloudShade{
+      position:fixed; inset:0;
+      z-index: 9997;
+      pointer-events:none;
+      opacity:0;
+      transition: opacity 400ms linear;
+      background:
+        radial-gradient(900px 650px at 50% 10%, rgba(0,0,0,.40), rgba(0,0,0,0) 65%),
+        linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.12));
+    }
+
+    /* ===== Board ===== */
+    .ecoBoard{
+      position:relative;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:18px;
+      background: rgba(10,14,30,.35);
+      overflow:hidden;
+      padding:10px;
+      min-height:330px;
+      z-index: 2;
+    }
+    .cols{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      position:relative;
+      z-index:2;
+    }
+    .card{
+      position:relative;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background: var(--card);
+      padding:10px;
+      min-height:130px;
+      overflow:hidden;
+      cursor:pointer;
+    }
+    #cardSoil{
+      background:
+        radial-gradient(420px 220px at 20% 20%, rgba(160,110,60,.28), rgba(160,110,60,0) 60%),
+        linear-gradient(180deg, rgba(24,18,14,.95), rgba(12,18,40,.92));
+      border-color: rgba(255,255,255,.18);
+    }
+    #cardAtm{
+      background: rgba(40,12,20,.86);
+      border-color: rgba(255,255,255,.18);
+    }
+    .card.dropHover{ outline:3px solid rgba(42,214,123,.55); }
+
+    .row1{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .title{
+      font-weight:1000;
+      display:flex;align-items:center;gap:8px;
+      font-size:15px;
+    }
+    .big{ font-weight:1000; font-size:30px; line-height:1; }
+
+    .subnums{
+      margin-top:10px;
+      display:flex; gap:10px; flex-wrap:wrap;
+      color:rgba(255,255,255,.90);
+      font-weight:900;
+      font-size:13px;
+    }
+    .badge{
+      padding:6px 9px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      display:inline-flex; align-items:center; gap:6px;
+    }
+    .bar{
+      width:100%;
+      height:10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.10);
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .bar > div{height:100%}
+
+    .spawnZone{
+      margin-top:10px;
+      border:1px dashed rgba(255,255,255,.22);
+      border-radius:16px;
+      background: rgba(10,14,30,.22);
+      padding:10px;
+      position:relative;
+      min-height:78px;
+      overflow:hidden;
+      z-index:3;
+    }
+    .muted{color:var(--muted);font-size:12.5px}
+
+    footer{
+      margin-top:10px;
+      color: rgba(255,255,255,.70);
+      font-size:12px;
+      text-align:center;
+      padding:8px 0 2px;
+    }
+
+    /* ===== Tokens ===== */
+    .token{
+      width:34px;height:34px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      box-shadow: 0 12px 22px rgba(0,0,0,.35);
+      position:fixed;
+      display:flex;align-items:center;justify-content:center;
+      font-size:16px;
+      user-select:none;
+      touch-action:none;
+      cursor:grab;
+      z-index:5000;
+    }
+    .token.dragging{transform:scale(1.08);box-shadow:0 18px 32px rgba(0,0,0,.48)}
+    .t-co2{ background:#1aa56f; }  /* 🟢 CO2 */
+    .t-water{ background:#3b78ff; }/* 💧 */
+    .t-rain{ background:#2aa8ff; } /* 🌧️ */
+    .t-leaf{ background:#7a4b2d; } /* 🍂 */
+    .t-nutr{ background:#2ecc71; } /* 🟩 */
+    .t-decomp{ background:#a87cff;}/* 🦠 */
+
+    /* ===== Auto flow tokens (anima) ===== */
+    .flowToken{
+      width:22px;height:22px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      position:fixed;
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;
+      z-index:6000;
+      pointer-events:none;
+      box-shadow: 0 10px 18px rgba(0,0,0,.35);
+    }
+    .flow-co2{ background: rgba(178,43,43,.92); } /* 🔴 CO2 emitido */
+    .flow-green{ background: rgba(26,165,111,.92); } /* 🟢 */
+    .flow-leaf{ background: rgba(122,75,45,.92); } /* 🍂 */
+    .flow-blue{ background: rgba(59,120,255,.92); } /* 💧 */
+
+    /* ===== Toast ===== */
+    .toast{
+      position:fixed;
+      left:12px; right:12px;
+      top:10px;
+      z-index:9999;
+      display:flex;
+      justify-content:center;
+      pointer-events:none;
+    }
+    .toast .bubble{
+      max-width:920px;
+      width:100%;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+      border-radius:14px;
+      padding:10px 12px;
+      box-shadow: 0 16px 36px rgba(0,0,0,.35);
+      font-weight:900;
+      opacity:0;
+      transform: translateY(-8px);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+    .toast .bubble.show{opacity:1; transform: translateY(0);}
+
+    /* ===== Modals ===== */
+    .modal{
+      position:fixed; inset:0;
+      display:none; align-items:center; justify-content:center;
+      padding:16px;
+      background: rgba(0,0,0,.78);
+      z-index:99999;
+    }
+    .modal.show{display:flex}
+    .modal .cardM{
+      width:min(900px, 100%);
+      border-radius:18px;
+      border:1px solid var(--line);
+      background: rgba(10,14,30,.98);
+      box-shadow: var(--shadow);
+      padding:14px;
+      position:relative;
+    }
+    .closeX{
+      position:absolute; top:10px; right:10px;
+      width:38px;height:38px;border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.08);
+      color:var(--text);
+      font-weight:900;
+      cursor:pointer;
+    }
+    .modal h2{margin:0 0 6px;font-size:18px}
+    .modal p{margin:0 0 10px;color:var(--muted);line-height:1.4;white-space:pre-wrap}
+    .btnClose{
+      margin-top:12px;
+      padding:10px 12px;border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.08);
+      color:var(--text);
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    /* ===== Eventos fortes ===== */
+    .flash{
+      position:fixed; inset:0;
+      background: rgba(255,0,0,.0);
+      pointer-events:none;
+      z-index:999999;
+    }
+    .flash.go{ animation: flash 900ms ease-out 1; }
+    @keyframes flash{
+      0%{ background: rgba(255,0,0,0); }
+      14%{ background: rgba(255,180,60,.25); }
+      32%{ background: rgba(255,0,0,.15); }
+      60%{ background: rgba(255,160,0,.22); }
+      100%{ background: rgba(255,0,0,0); }
+    }
+    .shake{ animation: shake 650ms cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes shake{
+      10%,90%{ transform: translate3d(-1px, 0, 0); }
+      20%,80%{ transform: translate3d(2px, 0, 0); }
+      30%,50%,70%{ transform: translate3d(-4px, 0, 0); }
+      40%,60%{ transform: translate3d(4px, 0, 0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="flash" id="flash"></div>
+  <div class="dayGlow" id="dg"></div>
+  <div class="nightShade" id="ns"></div>
+  <div class="cloudShade" id="cs"></div>
+
+  <div class="toast" aria-live="polite" aria-atomic="true">
+    <div class="bubble" id="toastBubble">Mensagem</div>
+  </div>
+
+  <div class="wrap" id="appWrap">
+    <header>
+      <h1>🌍 RespiraCarbono 2.0 — Arraste & Equilibre</h1>
+      <p class="sub">
+        Você tem <b>60s</b>. Arraste tokens para os compartimentos certos. O <b>Solo emite CO₂</b> automaticamente.
+        <b>Estoque</b> no Solo (vale muito), crie <b>algas</b> na água e <b>biomassa</b> na planta.
+        <span style="display:block;margin-top:4px">
+          Legenda: 🟢 CO₂ para fotossíntese | 🔴 CO₂ emitido (vai para Atmosfera)
+        </span>
+      </p>
+      <div class="toprow">
+        <div class="pill">⏱️ <b id="time">60</b>s</div>
+        <div class="pill">☀️/🌙 <b id="cycleLabel">Dia</b></div>
+        <div class="pill">🌫️ CO₂ Atmosfera: <b id="atmCO2">0</b></div>
+        <div class="pill">⭐ Pontos: <b id="score">0</b></div>
+        <div class="pill">⚠️ Evento: <b id="eventLab">—</b></div>
+        <button class="btn" id="rulesBtn" type="button">Regras</button>
+        <button class="btn" id="finishBtn" type="button">Finalizar</button>
+        <button class="btn" id="resetBtn" type="button">Reiniciar</button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="ecoBoard" id="ecoBoard">
+        <div class="cols">
+          <!-- PLANTA -->
+          <div class="card dropzone" id="cardPlant" data-zone="plant">
+            <div class="row1">
+              <div class="title">🌿 Plantas</div>
+              <div class="big"><span id="biomass">0</span></div>
+            </div>
+            <div class="subnums">
+              <span class="badge">🟢 fixado: <span id="fixedC">0</span></span>
+              <span class="badge">Luz: <span id="light">80</span>%</span>
+            </div>
+            <div class="bar"><div id="lightBar" style="background:rgba(255,240,120,.65);width:80%"></div></div>
+          </div>
+
+          <!-- AGUA -->
+          <div class="card dropzone" id="cardWater" data-zone="water">
+            <div class="row1">
+              <div class="title">💦 Água + Algas</div>
+              <div class="big"><span id="algae">0</span></div>
+            </div>
+            <div class="subnums">
+              <span class="badge">Nutrientes: <span id="nutrW">0</span></span>
+              <span class="badge">Nível: <span id="waterLvl">70</span>%</span>
+            </div>
+            <div class="bar"><div id="waterBar" style="background:rgba(120,180,255,.70);width:70%"></div></div>
+          </div>
+
+          <!-- SOLO -->
+          <div class="card dropzone" id="cardSoil" data-zone="soil">
+            <div class="row1">
+              <div class="title">🟫 Solo</div>
+              <div class="big"><span id="soilStock">0</span></div>
+            </div>
+            <div class="subnums">
+              <span class="badge">Umidade: <span id="soilMoist">60</span>%</span>
+              <span class="badge">🦠: <span id="decomp">0</span></span>
+              <span class="badge">🍂: <span id="leaf">0</span></span>
+            </div>
+            <div class="bar"><div id="soilBar" style="background:rgba(180,120,255,.55);width:60%"></div></div>
+          </div>
+
+          <!-- ATM -->
+          <div class="card" id="cardAtm">
+            <div class="row1">
+              <div class="title">🌫️ Atmosfera</div>
+              <div class="big"><span id="atmBig">0</span></div>
+            </div>
+            <div class="subnums">
+              <span class="badge">🔴 emissões do Solo/Água</span>
+              <span class="badge">Dia: 🌿+🦠 puxam</span>
+            </div>
+            <div class="bar"><div id="atmBar" style="background:rgba(255,90,70,.65);width:10%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spawnZone" id="spawnZone">
+        <div class="muted">
+          Tokens: 🟢 CO₂ → 🌿 | 💧 → 🟫 | 🌧️ → 💦 | 🍂 → 🟫 | 🟩 → 💦/🟫 | 🦠 → 🟫
+          • Dia/Noite: 5s • Eventos: 13s (pausa)
+        </div>
+        <div class="muted">Pontos: Solo +4 • Biomassa +2 • Algas +1 • Atmosfera CO₂ −3</div>
+      </div>
+
+      <footer>Idealizado por Ernandes Sobreira para educação climática.</footer>
+    </section>
+  </div>
+
+  <!-- Modal principal -->
+  <div class="modal" id="modal" aria-hidden="true">
+    <div class="cardM" role="dialog" aria-modal="true">
+      <button class="closeX" id="xClose" type="button">✕</button>
+      <h2 id="mTitle">Info</h2>
+      <p id="mText"></p>
+      <button class="btnClose" id="closeBtn" type="button">Fechar</button>
+    </div>
+  </div>
+
+  <!-- Modal start -->
+  <div class="modal" id="startModal" aria-hidden="true">
+    <div class="cardM" role="dialog" aria-modal="true">
+      <h2 style="margin:0 0 6px;font-size:18px">Quer ser um CARBONAUTA? 🧭</h2>
+      <p style="margin:0 0 10px;color:var(--muted);white-space:pre-wrap;line-height:1.4;font-size:12.5px">
+Você tem 60s para equilibrar carbono no ecossistema.
+
+Faça:
+• 🟢 CO₂ → 🌿 Plantas (fixa e vira biomassa)
+• 💧 → 🟫 Solo (umidade reduz emissão)
+• 🌧️ → 💦 Água (sobe nível)
+• 🟩 → 💦 (cresce algas) ou 🟫 (ajuda solo)
+• 🍂 → 🟫 (retém água e aumenta estoque no solo)
+• 🦠 → 🟫 (recicla, mas aumenta emissão: cuidado!)
+
+Automático:
+• 🟫 Solo emite 🔴 CO₂ (mais com calor/seca e com 🦠)
+• 💦 Água emite um pouco 🔴 e algas puxam 🟢 no dia
+• Dia/noite alterna a cada 5s (fade)
+• Eventos a cada 13s com pausa: Seca → Nublado → Calor → Queimada → Restauração (repete)
+
+Meta:
+• Maximizar pontos (solo + biomassa + algas) e manter CO₂ da atmosfera baixo.
+      </p>
+      <button class="btnClose" id="startBtn" type="button">COMEÇAR</button>
+    </div>
+  </div>
+
+<script>
+  const $ = (id)=>document.getElementById(id);
+  const spawnZone = $("spawnZone");
+  const toastBubble = $("toastBubble");
+
+  const state = {
+    t: 60,
+    running: false,
+    paused: false,
+    resumeOnClose: false,
+
+    // Compartimentos
+    biomass: 0,
+    fixedC: 0,
+    algae: 0,
+    soilStock: 0,
+
+    light: 80,
+    waterLvl: 70,
+    soilMoist: 60,
+    nutrW: 0,
+    nutrS: 0,
+    leaf: 0,
+    decomp: 0,
+
+    // Atmosfera (CO2 “realista” via buffer)
+    atm: 10,
+    atmBufPlus: 0,
+    atmBufMinus: 0,
+
+    // Ciclo
+    isDay: true,
+    elapsed: 0,
+
+    // Eventos
+    eventIndex: 0,
+    eventLabel: "—",
+    cloudyBoost: 0, // reforça escurecimento temporário
+
+    // Tokens visuais
+    tokens: new Map(),
+    nextId: 1,
+    timers: {},
+  };
+
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+  function rnd(min,max){ return Math.random()*(max-min)+min; }
+
+  function toast(msg, ms=1200){
+    toastBubble.textContent = msg;
+    toastBubble.classList.add("show");
+    clearTimeout(toastBubble._t);
+    toastBubble._t = setTimeout(()=>toastBubble.classList.remove("show"), ms);
+  }
+
+  function openModal(id){
+    const m=$(id);
+    m.classList.add("show");
+    m.setAttribute("aria-hidden","false");
+  }
+  function closeModal(id){
+    const m=$(id);
+    m.classList.remove("show");
+    m.setAttribute("aria-hidden","true");
+
+    if(state.resumeOnClose){
+      state.resumeOnClose = false;
+      state.paused = false;
+      resumeTimers();
+      toast("▶️ Jogo retomado!", 900);
+    }
+  }
+
+  function applyDayNight(){
+    const dg = $("dg");
+    const ns = $("ns");
+    if(state.isDay){
+      dg.classList.add("dayOn");
+      ns.classList.remove("nightOn");
+    } else {
+      dg.classList.remove("dayOn");
+      ns.classList.add("nightOn");
+    }
+  }
+
+  function applyCloudShade(){
+    // escurece mais quando luz baixa e quando nublado ativo
+    const cs = $("cs");
+    const lightFrac = clamp(state.light,0,100)/100;
+    const darkness = clamp((1 - lightFrac) * 0.85 + state.cloudyBoost, 0, 0.92);
+    cs.style.opacity = String(darkness);
+  }
+
+  function score(){
+    // Solo +4, Biomassa +2, Algas +1, Atmosfera -3
+    return Math.round(state.soilStock*4 + state.biomass*2 + state.algae*1 - state.atm*3);
+  }
+
+  function updateBars(){
+    $("lightBar").style.width = clamp(state.light,0,100) + "%";
+    $("waterBar").style.width = clamp(state.waterLvl,0,100) + "%";
+    $("soilBar").style.width  = clamp(state.soilMoist,0,100) + "%";
+    $("atmBar").style.width   = clamp((state.atm/60)*100, 0, 100) + "%";
+  }
+
+  function updateUI(){
+    $("time").textContent = state.t;
+    $("cycleLabel").textContent = state.isDay ? "Dia" : "Noite";
+    $("eventLab").textContent = state.eventLabel;
+
+    $("biomass").textContent = state.biomass;
+    $("fixedC").textContent  = state.fixedC;
+    $("algae").textContent   = state.algae;
+    $("soilStock").textContent = state.soilStock;
+
+    $("light").textContent = Math.round(state.light);
+    $("waterLvl").textContent = Math.round(state.waterLvl);
+    $("soilMoist").textContent = Math.round(state.soilMoist);
+    $("nutrW").textContent = state.nutrW;
+    $("decomp").textContent = state.decomp;
+    $("leaf").textContent = state.leaf;
+
+    $("atmCO2").textContent = state.atm;
+    $("atmBig").textContent = state.atm;
+    $("score").textContent = score();
+
+    updateBars();
+    applyCloudShade();
+  }
+
+  // ===== Tokens (criar/remover/mover) =====
+  function zoneRect(){ return spawnZone.getBoundingClientRect(); }
+
+  function createToken(kind){
+    if(!state.running || state.paused) return;
+    const id = state.nextId++;
+    const el = document.createElement("div");
+    el.className = "token " + (
+      kind==="co2" ? "t-co2" :
+      kind==="water" ? "t-water" :
+      kind==="rain" ? "t-rain" :
+      kind==="leaf" ? "t-leaf" :
+      kind==="nutr" ? "t-nutr" :
+      "t-decomp"
+    );
+    el.textContent =
+      kind==="co2" ? "🟢" :
+      kind==="water" ? "💧" :
+      kind==="rain" ? "🌧️" :
+      kind==="leaf" ? "🍂" :
+      kind==="nutr" ? "🟩" :
+      "🦠";
+    el.dataset.id = String(id);
+
+    const r = zoneRect();
+    const pad = 12;
+    const x = r.left + pad + Math.random() * (r.width - 34 - pad*2);
+    const y = r.top  + 14  + Math.random() * (Math.max(40, r.height - 34 - 18));
+
+    el.style.left = x + "px";
+    el.style.top  = y + "px";
+
+    const vx = (Math.random()*2 - 1) * 0.20;
+    const vy = (Math.random()*2 - 1) * 0.14;
+
+    document.body.appendChild(el);
+    state.tokens.set(id, { el, x, y, vx, vy, kind });
+    el.addEventListener("pointerdown", onPointerDown);
+  }
+
+  function removeToken(id){
+    const info = state.tokens.get(id);
+    if(!info) return;
+    info.el.remove();
+    state.tokens.delete(id);
+  }
+
+  let drag = null;
+
+  function onPointerDown(e){
+    if(!state.running || state.paused) return;
+    const el = e.currentTarget;
+    const id = Number(el.dataset.id);
+    const info = state.tokens.get(id);
+    if(!info) return;
+
+    el.setPointerCapture(e.pointerId);
+    el.classList.add("dragging");
+    const rect = el.getBoundingClientRect();
+    drag = { id, el, dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+    e.preventDefault();
+  }
+
+  function getDropzones(){ return Array.from(document.querySelectorAll(".dropzone")); }
+  function clearHighlights(){ getDropzones().forEach(z=>z.classList.remove("dropHover")); }
+  function getDropzoneUnderPoint(x,y){
+    for(const z of getDropzones()){
+      const r = z.getBoundingClientRect();
+      if(x>=r.left && x<=r.right && y>=r.top && y<=r.bottom) return z;
+    }
+    return null;
+  }
+  function highlightDropzone(x,y){
+    clearHighlights();
+    const z = getDropzoneUnderPoint(x,y);
+    if(z) z.classList.add("dropHover");
+  }
+
+  window.addEventListener("pointermove", (e)=>{
+    if(!drag) return;
+    const w = window.innerWidth, h = window.innerHeight;
+    let x = e.clientX - drag.dx;
+    let y = e.clientY - drag.dy;
+    x = clamp(x, 2, w - 36);
+    y = clamp(y, 2, h - 36);
+    drag.el.style.left = x + "px";
+    drag.el.style.top  = y + "px";
+    const info = state.tokens.get(drag.id);
+    if(info){ info.x=x; info.y=y; }
+    highlightDropzone(e.clientX, e.clientY);
+    e.preventDefault();
+  }, {passive:false});
+
+  window.addEventListener("pointerup", (e)=>{
+    if(!drag) return;
+    drag.el.classList.remove("dragging");
+    const z = getDropzoneUnderPoint(e.clientX, e.clientY);
+    if(z) applyDrop(z.dataset.zone, drag.id);
+    clearHighlights();
+    drag = null;
+    e.preventDefault();
+  }, {passive:false});
+
+  function driftStep(){
+    if(!state.running || state.paused) return;
+    if(drag) return;
+
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    state.tokens.forEach((info)=>{
+      let x = info.x + info.vx;
+      let y = info.y + info.vy;
+
+      if(x < 2 || x > w - 36) info.vx *= -1;
+      if(y < 80 || y > h - 36) info.vy *= -1;
+
+      x = clamp(x, 2, w - 36);
+      y = clamp(y, 80, h - 36);
+
+      info.x = x; info.y = y;
+      info.el.style.left = x + "px";
+      info.el.style.top  = y + "px";
+    });
+  }
+
+  // ===== Fluxo animado =====
+  function centerOf(el){
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width/2, y: r.top + r.height/2 };
+  }
+  function animateFlow(fromEl, toEl, symbol, cls){
+    const start = centerOf(fromEl);
+    const end = centerOf(toEl);
+
+    const el = document.createElement("div");
+    el.className = "flowToken " + cls;
+    el.textContent = symbol;
+    document.body.appendChild(el);
+
+    const duration = 1000;
+    const t0 = performance.now();
+
+    function step(t){
+      const k = Math.min(1, (t - t0) / duration);
+      const ease = 1 - Math.pow(1-k, 3);
+      const cx = (start.x + end.x)/2;
+      const cy = (start.y + end.y)/2 - 60;
+
+      const x = (1-ease)*(1-ease)*start.x + 2*(1-ease)*ease*cx + ease*ease*end.x;
+      const y = (1-ease)*(1-ease)*start.y + 2*(1-ease)*ease*cy + ease*ease*end.y;
+
+      el.style.left = (x - 11) + "px";
+      el.style.top  = (y - 11) + "px";
+
+      if(k < 1) requestAnimationFrame(step);
+      else el.remove();
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ===== Atmosfera com buffer (suave) =====
+  function addAtmBuffered(n){ state.atmBufPlus += Math.max(0, n|0); }
+  function subAtmBuffered(n){ state.atmBufMinus += Math.max(0, n|0); }
+
+  function applyAtmBuffers(){
+    if(!state.running || state.paused) return;
+    const step = 2; // max por segundo
+    const plus = Math.min(step, state.atmBufPlus);
+    const minus = Math.min(step, state.atmBufMinus);
+
+    if(plus>0){ state.atm += plus; state.atmBufPlus -= plus; }
+    if(minus>0){
+      const real = Math.min(state.atm, minus);
+      state.atm -= real;
+      state.atmBufMinus -= real;
+    }
+    state.atm = clamp(state.atm, 0, 999);
+    updateUI();
+  }
+
+  // ===== Drop rules (coerentes) =====
+  function applyDrop(zone, tokenId){
+    if(state.paused) return;
+    const info = state.tokens.get(tokenId);
+    if(!info) return;
+
+    const kind = info.kind;
+
+    if(kind === "co2"){
+      if(zone !== "plant"){
+        toast("🟢 CO₂ vai para 🌿 Plantas (fotossíntese).", 1100);
+        return;
+      }
+      // fotossíntese depende de luz e água/umidade
+      const L = clamp(state.light,0,100)/100;
+      const W = clamp((state.soilMoist*0.55 + state.waterLvl*0.45),0,100)/100;
+      const A = clamp(state.algae,0,60)/60; // algas ajudam levemente na “capacidade”
+      let power = (0.60*L + 0.40*W) * (0.85 + 0.15*A);
+      if(!state.isDay) power *= 0.10;
+
+      const success = Math.random() < clamp(power + 0.18, 0, 0.98);
+      removeToken(tokenId);
+
+      if(success){
+        // fixa CO2: reduz atmosfera um pouco e aumenta biomassa
+        subAtmBuffered(1);
+        state.biomass += 1;
+        state.fixedC += 1;
+        // uma parte vai para estoque no solo ao longo do tempo (simulado)
+        if(Math.random() < 0.25) state.soilStock += 1;
+
+        animateFlow($("cardAtm"), $("cardPlant"), "🟢", "flow-green");
+        toast("✅ CO₂ fixado! +biomassa 🌿", 900);
+      } else {
+        toast("⚠️ Condições ruins: precisa mais ☀️ e 💧/umidade.", 1100);
+      }
+      updateUI();
+      return;
+    }
+
+    if(kind === "water"){
+      if(zone !== "soil"){
+        toast("💧 Água: coloque no 🟫 Solo (umidificar).", 1100);
+        return;
+      }
+      removeToken(tokenId);
+      state.soilMoist = clamp(state.soilMoist + 12, 0, 100);
+      animateFlow($("cardWater"), $("cardSoil"), "💧", "flow-blue");
+      toast("💧 Solo mais úmido: reduz emissões.", 900);
+      updateUI();
+      return;
+    }
+
+    if(kind === "rain"){
+      if(zone !== "water"){
+        toast("🌧️ Chuva: coloque na 💦 Água (subir nível).", 1100);
+        return;
+      }
+      removeToken(tokenId);
+      state.waterLvl = clamp(state.waterLvl + 16, 0, 100);
+      // chuva também aumenta um pouco umidade do solo
+      state.soilMoist = clamp(state.soilMoist + 6, 0, 100);
+      animateFlow($("cardAtm"), $("cardWater"), "🌧️", "flow-blue");
+      toast("🌧️ Nível da água subiu!", 900);
+      updateUI();
+      return;
+    }
+
+    if(kind === "leaf"){
+      if(zone !== "soil"){
+        toast("🍂 Folhas: vão para 🟫 Solo (retenção + estoque).", 1100);
+        return;
+      }
+      removeToken(tokenId);
+      state.leaf += 1;
+      // folhas aumentam retenção: umidade “rende” mais
+      state.soilMoist = clamp(state.soilMoist + 8, 0, 100);
+      // e aumentam estoque no solo (muito valioso)
+      state.soilStock += 2;
+      animateFlow($("cardPlant"), $("cardSoil"), "🍂", "flow-leaf");
+      toast("🍂 Solo virou esponja! +estoque 🟫", 900);
+      updateUI();
+      return;
+    }
+
+    if(kind === "nutr"){
+      if(zone === "water"){
+        removeToken(tokenId);
+        state.nutrW += 1;
+        // nutrientes + água geram algas (com delay no pulso)
+        toast("🟩 Nutriente na água: algas vão crescer.", 900);
+        updateUI();
+        return;
+      }
+      if(zone === "soil"){
+        removeToken(tokenId);
+        state.nutrS += 1;
+        // nutrientes no solo ajudam planta e estoque
+        state.soilStock += 1;
+        state.light = clamp(state.light + 2, 0, 100); // cosmético: vigor
+        toast("🟩 Nutriente no solo: melhora vigor e estoque.", 900);
+        updateUI();
+        return;
+      }
+      toast("🟩 Nutriente: use em 💦 Água ou 🟫 Solo.", 1100);
+      return;
+    }
+
+    if(kind === "decomp"){
+      if(zone !== "soil"){
+        toast("🦠 Decompositores: vão para 🟫 Solo.", 1100);
+        return;
+      }
+      removeToken(tokenId);
+      state.decomp += 1;
+      toast("🦠 Decomposição aumenta (mais emissão!).", 900);
+      updateUI();
+      return;
+    }
+  }
+
+  // ===== Ecologia automática =====
+  function toggleDayNight(){
+    if(!state.running || state.paused) return;
+    state.isDay = !state.isDay;
+    applyDayNight();
+    toast(state.isDay ? "☀️ Dia: plantas+algas puxam CO₂" : "🌙 Noite: respiração devolve CO₂", 900);
+    updateUI();
+  }
+
+  function ecoPulse(){
+    if(!state.running || state.paused) return;
+
+    // recuperação lenta de luz (se não for nublado extremo)
+    const targetLight = state.isDay ? 82 : 35;
+    state.light += (targetLight - state.light) * 0.06;
+    state.light = clamp(state.light, 0, 100);
+
+    // evaporação: água cai mais com calor e de dia
+    const evap = (state.isDay ? 0.7 : 0.35);
+    state.waterLvl = clamp(state.waterLvl - evap, 0, 100);
+
+    // solo perde umidade (menos se tiver folhas)
+    const retention = 1 + state.leaf * 0.10; // folhas seguram
+    const dry = (state.isDay ? 0.8 : 0.45) / retention;
+    state.soilMoist = clamp(state.soilMoist - dry, 0, 100);
+
+    // ALGAS crescem se tiver água + nutriente
+    if(state.waterLvl > 40 && state.nutrW > 0){
+      const growth = Math.min(2, Math.floor(0.5 + state.nutrW*0.25));
+      if(Math.random() < 0.55){
+        state.algae += growth;
+        // nutriente é parcialmente consumido
+        if(Math.random() < 0.45) state.nutrW = Math.max(0, state.nutrW - 1);
+        toast(`🦠 Algas +${growth}`, 800);
+      }
+    }
+
+    // SOLO emite CO2 (mais se seco + calor + decompositores)
+    // emissão sobe quando soloMoist baixo
+    const dryness = clamp((60 - state.soilMoist)/60, 0, 1);
+    const decompBoost = 0.06 * state.decomp;
+    const heatBoost = (state.eventLabel === "CALOR" ? 0.12 : 0);
+    const baseEmit = 0.10 + dryness*0.30 + decompBoost + heatBoost;
+    if(Math.random() < clamp(baseEmit, 0, 0.70)){
+      // uma unidade do estoque “vira” CO2 (se tiver)
+      if(state.soilStock > 0 && Math.random() < 0.50) state.soilStock -= 1;
+      addAtmBuffered(1);
+      animateFlow($("cardSoil"), $("cardAtm"), "🔴", "flow-co2");
+    }
+
+    // ÁGUA emite CO2 (bem leve; aumenta quando nível baixo)
+    const wlow = clamp((45 - state.waterLvl)/45, 0, 1);
+    const waterEmit = 0.05 + wlow*0.10;
+    if(Math.random() < clamp(waterEmit, 0, 0.35)){
+      addAtmBuffered(1);
+      animateFlow($("cardWater"), $("cardAtm"), "🔴", "flow-co2");
+    }
+
+    // DIA: plantas puxam CO2 (capado, realista)
+    if(state.isDay && state.atm > 0){
+      const L = clamp(state.light,0,100)/100;
+      const W = clamp((state.soilMoist*0.55 + state.waterLvl*0.45),0,100)/100;
+      const alg = clamp(state.algae,0,80)/80;
+
+      const plantCap = Math.min(4, Math.floor(1 + (L+W)*1.8)); // 1..4
+      const algaeCap = Math.min(3, Math.floor(alg*3));         // 0..3
+
+      const pull = Math.min(state.atm, plantCap + algaeCap);
+      if(pull > 0){
+        subAtmBuffered(pull);
+        // parte vira biomassa, parte vira estoque (via folhas/solo saudável)
+        const toBio = Math.max(1, Math.floor(pull * 0.60));
+        const toSoil = Math.floor(pull * (0.15 + Math.min(0.20, state.leaf*0.03)));
+        state.biomass += toBio;
+        state.fixedC += pull;
+        state.soilStock += toSoil;
+
+        animateFlow($("cardAtm"), $("cardPlant"), "🟢", "flow-green");
+      }
+    }
+
+    // NOITE: respiração devolve CO2 (moderada)
+    if(!state.isDay){
+      const resp = Math.min(state.biomass, Math.floor(0.6 + state.biomass*0.06));
+      if(resp > 0 && Math.random() < 0.70){
+        state.biomass -= resp;
+        addAtmBuffered(resp);
+        animateFlow($("cardPlant"), $("cardAtm"), "🔴", "flow-co2");
+      }
+    }
+
+    // nublado boost decai
+    state.cloudyBoost = Math.max(0, state.cloudyBoost - 0.03);
+
+    // limiter de algas
+    state.algae = clamp(state.algae, 0, 120);
+
+    updateUI();
+  }
+
+  // ===== Eventos a cada 13s (pausa + popup) =====
+  function strongEventFX(){
+    const flash = $("flash");
+    flash.classList.remove("go"); void flash.offsetWidth; flash.classList.add("go");
+    const wrap = $("appWrap");
+    wrap.classList.remove("shake"); void wrap.offsetWidth; wrap.classList.add("shake");
+    setTimeout(()=>wrap.classList.remove("shake"), 900);
+  }
+
+  function stopTimers(){
+    Object.values(state.timers).forEach(t=>t && clearInterval(t));
+    state.timers = {};
+  }
+
+  function resumeTimers(){
+    state.timers.tick = setInterval(tick, 1000);
+    state.timers.spawn = setInterval(spawnTokens, 2200);
+    state.timers.drift = setInterval(driftStep, 30);
+    state.timers.buff = setInterval(applyAtmBuffers, 1000);
+    state.timers.cycle = setInterval(toggleDayNight, 5000);
+    state.timers.pulse = setInterval(ecoPulse, 2300);
+    state.timers.event = setInterval(triggerEvent, 13000);
+    state.timers.cleanup = setInterval(cleanupTokens, 2000);
+  }
+
+  function pauseForEvent(title, text){
+    state.paused = true;
+    stopTimers();
+    state.resumeOnClose = true;
+    $("mTitle").textContent = title;
+    $("mText").textContent = text;
+    openModal("modal");
+  }
+
+  function triggerEvent(){
+    if(!state.running || state.paused) return;
+
+    const cycle = ["SECA","NUBLADO","CALOR","QUEIMADA","RESTAURAÇÃO"];
+    const kind = cycle[state.eventIndex % cycle.length];
+    state.eventIndex++;
+    state.eventLabel = kind;
+
+    strongEventFX();
+
+    if(kind === "SECA"){
+      const wDrop = 18, sDrop = 20;
+      state.waterLvl = clamp(state.waterLvl - wDrop, 0, 100);
+      state.soilMoist = clamp(state.soilMoist - sDrop, 0, 100);
+
+      pauseForEvent("🌵 SECA SEVERA",
+        `O que aconteceu:
+• Nível da água: -${wDrop}%
+• Umidade do solo: -${sDrop}%
+
+Efeito:
+• Solo seco emite mais 🔴 CO₂.
+Dica:
+• Use 💧 no Solo e 🌧️ na Água.`
+      );
+    }
+
+    if(kind === "NUBLADO"){
+      const lDrop = 28;
+      state.light = clamp(state.light - lDrop, 0, 100);
+      state.cloudyBoost = 0.35; // escurece muito
+      pauseForEvent("🌫️ NUBLADO",
+        `O que aconteceu:
+• Luz: -${lDrop}%
+• Ambiente ficou mais escuro (visual).
+
+Efeito:
+• Plantas/algas puxam menos CO₂ durante o dia.
+Dica:
+• Prepare o solo (🍂 + 💧) para segurar carbono.`
+      );
+    }
+
+    if(kind === "CALOR"){
+      // calor aumenta emissão e derruba um pouco água
+      const wDrop = 10;
+      state.waterLvl = clamp(state.waterLvl - wDrop, 0, 100);
+      addAtmBuffered(4);
+      pauseForEvent("🔥 ONDA DE CALOR",
+        `O que aconteceu:
+• Evaporação aumentou (água -${wDrop}%)
+• Emissão extra: +4 🔴 CO₂
+
+Efeito:
+• Solo emite mais CO₂ por um tempo.
+Dica:
+• Aumente umidade do Solo e use 🍂 para reter.`
+      );
+    }
+
+    if(kind === "QUEIMADA"){
+      // queimada: perde biomassa, folhas e libera CO2
+      const loseBio = Math.min(state.biomass, 5);
+      const loseLeaf = Math.min(state.leaf, 2);
+      state.biomass -= loseBio;
+      state.leaf -= loseLeaf;
+      addAtmBuffered(6 + loseBio);
+      pauseForEvent("🔥 QUEIMADA",
+        `O que aconteceu:
+• Biomassa perdida: -${loseBio} (🌿)
+• Folhas no solo perdidas: -${loseLeaf} (🍂)
+• Emissão: +${6 + loseBio} 🔴 CO₂
+
+Dica:
+• Restaure com 🍂 e água para reconstruir o estoque no solo.`
+      );
+    }
+
+    if(kind === "RESTAURAÇÃO"){
+      // restaura: dá bônus de folhas e umidade
+      state.leaf += 1;
+      state.soilStock += 2;
+      state.soilMoist = clamp(state.soilMoist + 10, 0, 100);
+      state.light = clamp(state.light + 10, 0, 100);
+      pauseForEvent("🌱 RESTAURAÇÃO",
+        `O que aconteceu:
+• +1 🍂 (serapilheira)
+• +2 estoque no Solo (🟫)
+• +10% umidade no Solo
+• +10% luz (clareou)
+
+Efeito:
+• Ajuda a segurar carbono no solo e reduzir emissões.`
+      );
+    }
+
+    updateUI();
+  }
+
+  // ===== Spawn tokens (varia e faz sentido) =====
+  function spawnTokens(){
+    if(!state.running || state.paused) return;
+
+    // sempre: CO2 aparece com frequência
+    createToken("co2");
+
+    // água / chuva aparecem menos
+    if(Math.random() < 0.55) createToken("water");
+    if(Math.random() < 0.28) createToken("rain");
+
+    // folhas aparecem ocasionalmente (mais no final do ciclo)
+    if(Math.random() < 0.35) createToken("leaf");
+
+    // nutrientes moderados
+    if(Math.random() < 0.40) createToken("nutr");
+
+    // decompositores raros (poderoso)
+    if(Math.random() < 0.22) createToken("decomp");
+
+    // mantém “piso” de CO2 na atmosfera para o jogo não travar em 0
+    if(state.atm < 6) addAtmBuffered(1);
+
+    updateUI();
+  }
+
+  function cleanupTokens(){
+    const maxTokens = 18;
+    if(state.tokens.size <= maxTokens) return;
+    const ids = Array.from(state.tokens.keys());
+    for(let i=0;i<ids.length && state.tokens.size>maxTokens;i++){
+      removeToken(ids[i]);
+    }
+  }
+
+  // ===== Tick =====
+  function tick(){
+    if(!state.running || state.paused) return;
+    state.t -= 1;
+    state.elapsed += 1;
+    if(state.t <= 0){
+      state.t = 0;
+      finishGame();
+      return;
+    }
+    updateUI();
+  }
+
+  // ===== Resultado / Carbonauta =====
+  function grade(){
+    const s = score();
+    if(s >= 80) return {name:"🏅 CARBONAUTA MESTRE", msg:"Você estocou carbono no solo e segurou emissões com estratégia."};
+    if(s >= 40) return {name:"✅ CARBONAUTA", msg:"Boa! Agora tente fortalecer o solo (🍂 + 💧) e usar nutrientes para algas."};
+    return {name:"🌱 APRENDIZ", msg:"Faltou estabilidade: eventos drenaram água e o solo emitiu demais. Use 🍂 e água cedo."};
+  }
+
+  function stopAll(){
+    Object.values(state.timers).forEach(t=>t && clearInterval(t));
+    state.timers = {};
+  }
+
+  function finishGame(){
+    state.running = false;
+    state.paused = true;
+    stopAll();
+    state.tokens.forEach(v=>v.el.remove());
+    state.tokens.clear();
+
+    const g = grade();
+    $("mTitle").textContent = g.name;
+    $("mText").textContent =
+`Resultados:
+🌿 Biomassa: ${state.biomass}
+🟫 Estoque no Solo: ${state.soilStock}
+🦠 Algas: ${state.algae}
+🌫️ CO₂ Atmosfera: ${state.atm}
+⭐ Pontos: ${score()}
+
+Leitura (para o jogador):
+• Solo úmido emite menos 🔴 CO₂.
+• 🍂 aumenta retenção e estoque no solo (vale muito).
+• 🟩 na água alimenta algas; algas ajudam a puxar CO₂ no dia.
+• 🦠 acelera decomposição: recicla, mas aumenta emissões.
+
+Mensagem climática:
+${g.msg}`;
+    openModal("modal");
+    updateUI();
+  }
+
+  // ===== Botões / Modais =====
+  $("rulesBtn").addEventListener("click", ()=>{
+    $("mTitle").textContent = "Regras (bem direto)";
+    $("mText").textContent =
+`Arraste:
+🟢 → 🌿 Plantas
+💧 → 🟫 Solo
+🌧️ → 💦 Água
+🍂 → 🟫 Solo
+🟩 → 💦 Água ou 🟫 Solo
+🦠 → 🟫 Solo (cuidado: aumenta emissão)
+
+Automático:
+• Solo emite 🔴 CO₂ (mais quando seco/quente e com 🦠).
+• Dia: plantas+algas puxam CO₂. Noite: respiração devolve um pouco.
+• Eventos a cada 13s com pausa.
+
+Pontuação:
+Solo +4 • Biomassa +2 • Algas +1 • Atmosfera -3`;
+    openModal("modal");
+  });
+
+  $("finishBtn").addEventListener("click", ()=>{ if(state.running) finishGame(); });
+
+  $("resetBtn").addEventListener("click", ()=>{
+    stopAll();
+    state.tokens.forEach(v=>v.el.remove());
+    state.tokens.clear();
+    openModal("startModal");
+  });
+
+  function closeAnyModal(){
+    if($("modal").classList.contains("show")) closeModal("modal");
+    if($("startModal").classList.contains("show")) closeModal("startModal");
+  }
+  $("closeBtn").addEventListener("click", closeAnyModal);
+  $("xClose").addEventListener("click", closeAnyModal);
+  $("modal").addEventListener("click", (e)=>{ if(e.target === $("modal")) closeModal("modal"); });
+
+  $("startBtn").addEventListener("click", ()=>{
+    closeModal("startModal");
+    startGame();
+  });
+
+  // ===== Card infos (toque para entender) =====
+  $("cardPlant").addEventListener("click", ()=>{
+    $("mTitle").textContent = "🌿 Plantas";
+    $("mText").textContent = "Recebe 🟢 CO₂.\nNo dia fixa e vira biomassa.\nÀ noite respira e devolve CO₂.";
+    openModal("modal");
+  });
+  $("cardWater").addEventListener("click", ()=>{
+    $("mTitle").textContent = "💦 Água + Algas";
+    $("mText").textContent = "Recebe 🌧️ e 🟩.\nCom água + nutrientes, cresce 🦠 algas.\nAlgas ajudam a puxar CO₂ no dia.";
+    openModal("modal");
+  });
+  $("cardSoil").addEventListener("click", ()=>{
+    $("mTitle").textContent = "🟫 Solo";
+    $("mText").textContent = "Recebe 💧, 🍂, 🟩 e 🦠.\nMais úmido emite menos CO₂.\n🍂 retém água e aumenta estoque (vale muito).\n🦠 aumenta decomposição e emissões.";
+    openModal("modal");
+  });
+  $("cardAtm").addEventListener("click", ()=>{
+    $("mTitle").textContent = "🌫️ Atmosfera";
+    $("mText").textContent = "Acumula 🔴 CO₂ emitido do Solo/Água.\nDia: plantas+algas puxam CO₂.\nMeta: manter baixo.";
+    openModal("modal");
+  });
+
+  // ===== Start =====
+  function startGame(){
+    state.t = 60;
+    state.running = true;
+    state.paused = false;
+    state.resumeOnClose = false;
+
+    state.biomass = 0;
+    state.fixedC = 0;
+    state.algae = 0;
+    state.soilStock = 6;
+
+    state.light = 82;
+    state.waterLvl = 72;
+    state.soilMoist = 62;
+    state.nutrW = 0;
+    state.nutrS = 0;
+    state.leaf = 1;
+    state.decomp = 0;
+
+    state.atm = 10;
+    state.atmBufPlus = 0;
+    state.atmBufMinus = 0;
+
+    state.isDay = true;
+    state.elapsed = 0;
+    state.eventIndex = 0;
+    state.eventLabel = "—";
+    state.cloudyBoost = 0;
+
+    applyDayNight();
+    applyCloudShade();
+
+    // limpa tokens
+    state.tokens.forEach(v=>v.el.remove());
+    state.tokens.clear();
+
+    // spawn inicial
+    for(let i=0;i<4;i++) createToken("co2");
+    createToken("water");
+    createToken("leaf");
+    createToken("nutr");
+
+    updateUI();
+    toast("✅ Começou! Fortaleça o SOLO cedo (🍂 + 💧).", 1500);
+    resumeTimers();
+  }
+
+  // ===== Init =====
+  openModal("startModal");
+  updateUI();
+  applyDayNight();
+  applyCloudShade();
+</script>
+</body>
+</html>
